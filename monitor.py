@@ -128,10 +128,6 @@ def _(dscl_formula, image, tol=0):
             dscl_formula.direction, dscl_formula.step, image.shape[:2]
         )
         enclosed_components = find_enclosed_components(allowed_regions, region_info)
-        # print(f"Prototype corners: {prototype_corners}")
-        # print(f"Reference corners: {reference_corners}")
-        # print(f"Allowed regions: {allowed_regions}")
-        # print(f"Enclosed components: {enclosed_components}")
         if enclosed_components:  # WeakDistance: at least one valid region is enough
             rf_to_components.append((rf, enclosed_components))
 
@@ -155,20 +151,12 @@ def _(dscl_formula, image, tol=0):
     reference_corners = [dscl_formula.region_identifier.p1, dscl_formula.region_identifier.p2, dscl_formula.region_identifier.p3, dscl_formula.region_identifier.p4]
     region_formulas = find_all_region_formulas(dscl_formula.subformula)
     region_info = extract_component_bounds(image[:, :, 0])
-    
-    # import logging
-    # logger = logging.getLogger(__name__)
 
     rf_to_components = []
     for rf in region_formulas:
         prototype_corners = [rf.region_identifier.p1, rf.region_identifier.p2, rf.region_identifier.p3, rf.region_identifier.p4]
         allowed_regions = explore_translated_regions(prototype_corners, reference_corners, dscl_formula.direction, dscl_formula.step, image.shape[:2])
         enclosed_components = find_enclosed_components(allowed_regions, region_info)    # find subregions that are enclosed by the allowed regions
-        # logger.debug(f"Enclosed components: {enclosed_components}")
-        # print(f"Prototype corners: {prototype_corners}")
-        # print(f"Reference corners: {reference_corners}")
-        # print(f"Allowed regions: {allowed_regions}")
-        # print(f"Enclosed components: {enclosed_components}")
         rf_to_components.append((rf, enclosed_components))
 
     component_combinations = itertools.product(*[comps for (_, comps) in rf_to_components])
@@ -308,10 +296,6 @@ def _(dscl_formula, image):
         prototype_corners = [rf.region_identifier.p1, rf.region_identifier.p2, rf.region_identifier.p3, rf.region_identifier.p4]
         allowed_regions = explore_translated_regions(prototype_corners, reference_corners, dscl_formula.direction, dscl_formula.step, image.shape[:2])
         enclosed_components = find_enclosed_components(allowed_regions, region_info)
-        # print(f"Prototype corners: {prototype_corners}")
-        # print(f"Reference corners: {reference_corners}")
-        # print(f"Allowed regions: {allowed_regions}")
-        # print(f"Enclosed components: {enclosed_components}")
         rf_to_components.append((rf, enclosed_components))
 
     component_combinations = itertools.product(*[comps for (_, comps) in rf_to_components])
@@ -340,10 +324,6 @@ def _(dscl_formula, image):
         prototype_corners = [rf.region_identifier.p1, rf.region_identifier.p2, rf.region_identifier.p3, rf.region_identifier.p4]
         allowed_regions = explore_translated_regions_weak(prototype_corners, reference_corners, dscl_formula.direction, dscl_formula.step, image.shape[:2])
         enclosed_components = find_enclosed_components(allowed_regions, region_info)
-        # print(f"Prototype corners: {prototype_corners}")
-        # print(f"Reference corners: {reference_corners}")
-        # print(f"Allowed regions: {allowed_regions}")
-        # print(f"Enclosed components: {enclosed_components}")
         if enclosed_components:
             rf_to_components.append((rf, enclosed_components))
 
@@ -457,51 +437,6 @@ def identify_corners(corners):
     bot_two = sorted(sorted_by_row[2:], key=lambda p: p.col)
     return {'top_left': top_two[0],'top_right': top_two[1],'bottom_left': bot_two[0],'bottom_right': bot_two[1]}
 
-# def explore_translated_regions(prototype_corners, reference_corners, direction, s, image_shape):
-#     H, W = image_shape
-#     proto_labeled = identify_corners(prototype_corners)
-#     ref_labeled = identify_corners(reference_corners)
-
-#     shift_row = shift_col = 0
-#     step = s.step
-#     shifted_regions = []
-
-#     while True:
-#         if direction == "N":
-#             ref_top = ref_labeled['top_left'].row
-#             proto_bottom = proto_labeled['bottom_left'].row
-#             shift_row = ref_top - step - proto_bottom
-#             shift_col = 0
-#         elif direction == "S":
-#             ref_bottom = ref_labeled['bottom_left'].row
-#             proto_top = proto_labeled['top_left'].row
-#             shift_row = ref_bottom + step - proto_top
-#             shift_col = 0
-#         elif direction == "W":
-#             ref_left = ref_labeled['top_left'].col
-#             proto_right = proto_labeled['top_right'].col
-#             shift_row = 0
-#             shift_col = ref_left - step - proto_right
-#         elif direction == "E":
-#             ref_right = ref_labeled['top_right'].col
-#             proto_left = proto_labeled['top_left'].col
-#             shift_row = 0
-#             shift_col = ref_right + step - proto_left
-#         else:
-#             raise ValueError("Invalid direction")
-
-#         def shifted(p):
-#             return PixelIdentifier(p.row + shift_row, p.col + shift_col)
-
-#         shifted_corners = {k: shifted(p) for k, p in proto_labeled.items()}
-#         shifted_coords = [shifted_corners[k] for k in ['top_left', 'top_right', 'bottom_left', 'bottom_right']]
-#         if any(p.row < 0 or p.col < 0 or p.row >= H or p.col >= W for p in shifted_coords): break
-
-#         shifted_regions.append(shifted_corners)
-#         step += 1
-    
-#     return shifted_regions
-
 
 def get_bounds(corners):
         rows = [pt.row for pt in corners]
@@ -593,7 +528,6 @@ def explore_translated_regions_weak(prototype_corners, reference_corners, direct
     delta = step.step
 
     if direction == 'E':
-        # Only constraint: left of prototype ≥ left of reference + delta
         min_col = max(ref_left + delta, 0)
         for r0 in range(0, H - proto_height + 1):
             for c0 in range(min_col, W - proto_width + 1):
@@ -605,7 +539,6 @@ def explore_translated_regions_weak(prototype_corners, reference_corners, direct
                 })
 
     elif direction == 'W':
-        # Only constraint: right of prototype ≤ right of reference - delta
         max_col = min(ref_right - delta, W)
         for r0 in range(0, H - proto_height + 1):
             for c0 in range(0, max_col - proto_width + 1):
@@ -617,7 +550,6 @@ def explore_translated_regions_weak(prototype_corners, reference_corners, direct
                 })
 
     elif direction == 'S':
-        # Only constraint: top of prototype ≥ top of reference + delta
         min_row = max(ref_top + delta, 0)
         for r0 in range(min_row, H - proto_height + 1):
             for c0 in range(0, W - proto_width + 1):
@@ -629,7 +561,6 @@ def explore_translated_regions_weak(prototype_corners, reference_corners, direct
                 })
 
     elif direction == 'N':
-        # Only constraint: bottom of prototype ≤ bottom of reference - delta
         max_row = min(ref_bot - delta, H)
         for r0 in range(0, max_row - proto_height + 1):
             for c0 in range(0, W - proto_width + 1):
@@ -646,47 +577,6 @@ def explore_translated_regions_weak(prototype_corners, reference_corners, direct
     return shifted_regions
 
 
-# def explore_translated_regions_weak(prototype_corners, reference_corners, direction, s, image_shape):
-#     H, W = image_shape
-#     proto_labeled = identify_corners(prototype_corners)
-#     ref_labeled = identify_corners(reference_corners)
-
-#     shifted_regions = []
-
-#     for shift in range(0, s.step + 1):
-#         if direction == "N":
-#             ref_top = ref_labeled['top_left'].row
-#             proto_bottom = proto_labeled['bottom_left'].row
-#             shift_row = ref_top - shift - proto_bottom
-#             shift_col = 0
-#         elif direction == "S":
-#             ref_bottom = ref_labeled['bottom_left'].row
-#             proto_top = proto_labeled['top_left'].row
-#             shift_row = ref_bottom + shift - proto_top
-#             shift_col = 0
-#         elif direction == "W":
-#             ref_left = ref_labeled['top_left'].col
-#             proto_right = proto_labeled['top_right'].col
-#             shift_row = 0
-#             shift_col = ref_left - shift - proto_right
-#         elif direction == "E":
-#             ref_right = ref_labeled['top_right'].col
-#             proto_left = proto_labeled['top_left'].col
-#             shift_row = 0
-#             shift_col = ref_right + shift - proto_left
-#         else:
-#             raise ValueError("Invalid direction")
-
-#         def shifted(p): 
-#             return PixelIdentifier(p.row + shift_row, p.col + shift_col)
-
-#         shifted_corners = {k: shifted(p) for k, p in proto_labeled.items()}
-#         shifted_coords = [shifted_corners[k] for k in ['top_left', 'top_right', 'bottom_left', 'bottom_right']]
-#         if any(p.row < 0 or p.col < 0 or p.row >= H or p.col >= W for p in shifted_coords): continue
-
-#         shifted_regions.append(shifted_corners)
-
-#     return shifted_regions
 
 def find_enclosed_components(allowed_regions, region_info):
     enclosed = []
